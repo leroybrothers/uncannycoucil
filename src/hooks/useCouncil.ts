@@ -40,7 +40,7 @@ export function useCouncil() {
     return others[Math.floor(Math.random() * others.length)];
   }, [detectAddressedAI]);
 
-  const generateMessage = useCallback(async (speaker: AISystem, history: Message[]) => {
+  const generateMessage = useCallback(async (speaker: AISystem, history: Message[]): Promise<{ message?: Message; retryable?: boolean }> => {
     try {
       const { data, error: fnError } = await supabase.functions.invoke('council-speak', {
         body: {
@@ -52,18 +52,27 @@ export function useCouncil() {
         }
       });
 
-      if (fnError) throw fnError;
-      if (data.error) throw new Error(data.error);
+      if (fnError) {
+        console.error('Function error:', fnError);
+        return { retryable: true };
+      }
+      
+      if (data?.error) {
+        console.warn('API returned error:', data.error);
+        return { retryable: data.retry === true };
+      }
 
       return {
-        id: crypto.randomUUID(),
-        speaker: data.speaker as AISystem,
-        content: data.content,
-        timestamp: Date.now()
+        message: {
+          id: crypto.randomUUID(),
+          speaker: data.speaker as AISystem,
+          content: data.content,
+          timestamp: Date.now()
+        }
       };
     } catch (err) {
       console.error('Error generating message:', err);
-      throw err;
+      return { retryable: true };
     }
   }, []);
 
@@ -78,21 +87,30 @@ export function useCouncil() {
       const speaker = getNextSpeaker(currentSpeaker, lastMessage);
       setCurrentSpeaker(speaker);
 
-      const newMessage = await generateMessage(speaker, messages);
+      const result = await generateMessage(speaker, messages);
       
-      setMessages(prev => [...prev, newMessage]);
-      
-      // Schedule next message
-      conversationRef.current = setTimeout(() => {
-        if (isRunningRef.current) {
-          runConversation();
-        }
-      }, CONVERSATION_DELAY);
+      if (result.message) {
+        setMessages(prev => [...prev, result.message!]);
+        // Schedule next message
+        conversationRef.current = setTimeout(() => {
+          if (isRunningRef.current) {
+            runConversation();
+          }
+        }, CONVERSATION_DELAY);
+      } else {
+        // No message returned, retry with appropriate delay
+        const retryDelay = result.retryable ? 3000 : CONVERSATION_DELAY * 2;
+        conversationRef.current = setTimeout(() => {
+          if (isRunningRef.current) {
+            runConversation();
+          }
+        }, retryDelay);
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       
-      // Retry after a longer delay on error
+      // Retry after a longer delay on unexpected error
       conversationRef.current = setTimeout(() => {
         if (isRunningRef.current) {
           runConversation();
