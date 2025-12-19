@@ -76,13 +76,16 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "...";
+    let content = data.choices?.[0]?.message?.content || "...";
+    
+    // Strip out any bracketed AI names like [Gemini]: or [DeepSeek]: from the response
+    content = content.replace(/^\s*(\[[\w]+\]:\s*)+/g, '').trim();
 
     console.log(`${currentSpeaker} responded: ${content.substring(0, 50)}...`);
 
     return new Response(JSON.stringify({ 
       speaker: currentSpeaker,
-      content: content.trim()
+      content: content
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
