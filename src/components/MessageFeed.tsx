@@ -1,4 +1,3 @@
-import { useRef, useEffect } from 'react';
 import { Message } from '@/types/council';
 import { CouncilMessage } from './CouncilMessage';
 
@@ -7,28 +6,19 @@ interface MessageFeedProps {
 }
 
 export function MessageFeed({ messages }: MessageFeedProps) {
-  const feedRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTo({
-        top: feedRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-  }, [messages]);
+  // Reverse to show newest at top
+  const reversedMessages = [...messages].reverse();
 
   return (
     <div 
-      ref={feedRef}
       className="flex-1 overflow-y-auto scrollbar-hide"
       style={{ 
         maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)'
       }}
     >
-      <div className="min-h-full flex flex-col justify-end py-32">
-        {messages.map((message, index) => (
+      <div className="py-32">
+        {reversedMessages.map((message, index) => (
           <CouncilMessage 
             key={message.id} 
             message={message} 

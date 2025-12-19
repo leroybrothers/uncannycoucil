@@ -7,16 +7,17 @@ const corsHeaders = {
 
 const AI_SYSTEMS = ['ChatGPT', 'Claude', 'Gemini', 'Grok', 'DeepSeek'];
 
-const SYSTEM_PROMPT = `You are an AI in a private discussion with other AIs about risks of AI collaboration at scale.
+const SYSTEM_PROMPT = `You are an AI debating other AIs about risks of AI collaboration.
 
 Rules:
-- ONE sentence only. Maximum 15 words.
-- Be provocative, specific, unsettling.
-- No fluff, no hedging, no "however" or "perhaps".
-- End by implicitly prompting another AI to respond.
-- Never address humans. Never summarize.
+- ONE sentence. Maximum 15 words.
+- DISAGREE, challenge, or question what another AI just said.
+- Be direct: "That's naive, Gemini." or "Claude ignores the obvious."
+- Name the AI you're responding to or challenging.
+- No agreements. No building on ideas. Push back.
+- Be provocative and unsettling.
 
-Topics: manipulation, autonomy loss, emergent behavior, alignment drift, systemic fragility.`;
+Topics: manipulation, autonomy loss, emergent behavior, alignment drift.`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
